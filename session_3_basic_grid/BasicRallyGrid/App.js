@@ -9,54 +9,96 @@ Ext.define('CustomApp', {
     // Entry Point to App
     launch: function() {
 	 
-      console.log('our second app');     // see console api: https://developers.google.com/chrome-developer-tools/docs/console-api
-      //this._loadData();                 // we need to prefix with 'this.' so we call a method found at the app level.
-	  this._loadIterations();
+		console.log('our second app');     // see console api: https://developers.google.com/chrome-developer-tools/docs/console-api
+      
+		this.pulldownContainer = Ext.create('Ext.container.Container', {
+			layout: {
+				type: 'hbox',
+				align: 'stretch'
+			},
+		});
+		
+		this.add(this.pulldownContainer);
+		
+		this._loadIterations();
     },
 
 	_loadIterations: function() {
 		
 		// Seems to make the combobox work
-		// var myIterations = Ext.create('Rally.data.wsapi.Store', {
-		  // model: 'Iteration',
-          // context: { 
-					// workspace: 'workspace/1625435694',
-					// project: 'project/1625444003',
-					// projectScopeDown: true,
-					// projectScopeUp: false,
-			// },		  
-          // autoLoad: true
-		// });
-		
+		var myIterations = Ext.create('Rally.data.wsapi.Store', {
+		  model: 'Iteration',
+          context: { 
+					workspace: 'workspace/1625435694',
+					project: 'project/13193012677',
+					projectScopeDown: false,
+					projectScopeUp: false,
+			},		  
+          autoLoad: true
+		});
+				
 		this.iterComboBox = Ext.create('Rally.ui.combobox.IterationComboBox', {				
-			// store: myIterations,
+			store: myIterations,
+			context: this.getContext().getDataContext(),
 			listeners: {
 				ready: function(combobox) {
-					this._loadData();  
-					console.log('ready!', combobox);
-			//		var selectedIterRef = combobox.getRecord().get('_ref');
-			//		console.log('chosen one', combobox.getRecord().get('_ref'));
+					//this._loadData();  
+					this._loadSeverities();
+					// console.log("Context", this.getContext().getDataContext());
+				},
+				select: function(combobox, records) {
+					this._loadData();
 				},
 				scope: this
 			}
 		});
 		
-		this.add(this.iterComboBox);
+		this.pulldownContainer.add(this.iterComboBox);
+	},
+	
+	_loadSeverities: function() {
+		this.severityComboBox = Ext.create('Rally.ui.combobox.FieldValueComboBox', {
+			model: 'Defect',
+			field: 'Severity',
+			listeners: {
+				ready: function(combobox) {
+					//this._loadData();  
+					this._loadData();
+					// console.log("Context", this.getContext().getDataContext());
+					// console.log('chosen one', combobox.getRecord().get('_ref'));
+				},
+				select: function(combobox, records) {
+					this._loadData();
+				},
+				scope: this
+			}			
+		});
+		
+		this.pulldownContainer.add(this.severityComboBox);
 	},
 	
     // Get data from Rally
     _loadData: function() {
 	  
-      var myStore = Ext.create('Rally.data.wsapi.Store', {
-          model: 'Defect',
-		  context: { 
-					workspace: 'workspace/1625435694',
-					project: 'project/1625444003',
-					projectScopeDown: true,
-					projectScopeUp: false,
-			},		  
-          autoLoad: true,                         // <----- Don't forget to set this to true! heh
-          listeners: {
+		var selectedIterRef = this.iterComboBox.getRecord().get('_ref');
+		var selectedSeverityValue = this.severityComboBox.getRecord().get('value');
+	  
+		var myStore = Ext.create('Rally.data.wsapi.Store', {
+			model: 'Defect',		  
+			autoLoad: true,                         // <----- Don't forget to set this to true! heh
+			filters: [
+				{
+					property: 'Iteration',
+					operation: '=',
+					value: selectedIterRef
+				}
+				,{
+					property: 'Severity',
+					opeation: '=',
+					value: selectedSeverityValue
+				}
+			],
+			listeners: {
               load: function(myStore, myData, success) {
                   console.log('got data!', myStore, myData);
                   this._loadGrid(myStore);      // if we did NOT pass scope:this below, this line would be incorrectly trying to call _createGrid() on the store which does not exist.
@@ -80,7 +122,7 @@ Ext.define('CustomApp', {
 
       this.add(myGrid);       // add the grid Component to the app-level Container (by doing this.add, it uses the app container)
 
-      console.log('what is this?', this);
+      // console.log('what is this?', this);
 
     }
 
