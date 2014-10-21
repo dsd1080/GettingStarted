@@ -8,16 +8,53 @@ Ext.define('CustomApp', {
 
     // Entry Point to App
     launch: function() {
-
-      console.log('our first app');     // see console api: https://developers.google.com/chrome-developer-tools/docs/console-api
-      this._loadData();                 // we need to prefix with 'this.' so we call a method found at the app level.
+	 
+      console.log('our second app');     // see console api: https://developers.google.com/chrome-developer-tools/docs/console-api
+      //this._loadData();                 // we need to prefix with 'this.' so we call a method found at the app level.
+	  this._loadIterations();
     },
 
+	_loadIterations: function() {
+		
+		// Seems to make the combobox work
+		// var myIterations = Ext.create('Rally.data.wsapi.Store', {
+		  // model: 'Iteration',
+          // context: { 
+					// workspace: 'workspace/1625435694',
+					// project: 'project/1625444003',
+					// projectScopeDown: true,
+					// projectScopeUp: false,
+			// },		  
+          // autoLoad: true
+		// });
+		
+		this.iterComboBox = Ext.create('Rally.ui.combobox.IterationComboBox', {				
+			// store: myIterations,
+			listeners: {
+				ready: function(combobox) {
+					this._loadData();  
+					console.log('ready!', combobox);
+			//		var selectedIterRef = combobox.getRecord().get('_ref');
+			//		console.log('chosen one', combobox.getRecord().get('_ref'));
+				},
+				scope: this
+			}
+		});
+		
+		this.add(this.iterComboBox);
+	},
+	
     // Get data from Rally
     _loadData: function() {
-
+	  
       var myStore = Ext.create('Rally.data.wsapi.Store', {
-          model: 'User Story',
+          model: 'Defect',
+		  context: { 
+					workspace: 'workspace/1625435694',
+					project: 'project/1625444003',
+					projectScopeDown: true,
+					projectScopeUp: false,
+			},		  
           autoLoad: true,                         // <----- Don't forget to set this to true! heh
           listeners: {
               load: function(myStore, myData, success) {
@@ -26,7 +63,7 @@ Ext.define('CustomApp', {
               },
               scope: this                         // This tells the wsapi data store to forward pass along the app-level context into ALL listener functions
           },
-          fetch: ['FormattedID', 'Name', 'ScheduleState']   // Look in the WSAPI docs online to see all fields available!
+          fetch: ['FormattedID', 'Name', 'Severity', 'Iteration']   // Look in the WSAPI docs online to see all fields available!
         });
 
     },
@@ -37,7 +74,7 @@ Ext.define('CustomApp', {
       var myGrid = Ext.create('Rally.ui.grid.Grid', {
         store: myStoryStore,
         columnCfgs: [         // Columns to display; must be the same names specified in the fetch: above in the wsapi data store
-          'FormattedID', 'Name', 'ScheduleState'
+          'FormattedID', 'Name', 'Severity', 'Iteration'
         ]
       });
 
